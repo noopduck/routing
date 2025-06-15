@@ -51,11 +51,22 @@ func FindLinuxDefaultGW() (string, error) {
 		}
 	}
 
-	gw_val := strings.Split(rows[1], "\t")
+	var decimal int64
+	var valErr error
 
-	decimal, valErr := strconv.ParseInt(gw_val[gw_at], 16, 64)
-	if valErr != nil {
-		return "", errors.New(valErr.Error())
+	for row := range rows {
+		if !strings.Contains(strings.TrimSpace(rows[row]), "Iface") {
+			row_vals := strings.Split(rows[row], "\t")
+			gw_val := strings.TrimSpace(row_vals[gw_at])
+			// If the Gateway is not set, iterate to next row
+			if gw_val != "00000000" {
+				decimal, valErr = strconv.ParseInt(gw_val, 16, 64)
+				if valErr != nil {
+					return "", errors.New(valErr.Error())
+				}
+				break
+			}
+		}
 	}
 
 	return DecimalToIP(decimal), nil
