@@ -9,6 +9,22 @@ import (
 	"strings"
 )
 
+// Struct representing the content inside
+// /proc/net/route
+type RoutingTable struct {
+	Interface   string
+	Destination string
+	Gateway     string
+	Flags       int8
+	RefCnt      int8
+	Use         int8
+	Metric      int8
+	Mask        string
+	MTU         int8
+	Window      int8
+	IRTT        int8
+}
+
 // Function to return the IP address
 // on it's normal form
 func DecimalToIP(decimal int64) string {
