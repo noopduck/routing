@@ -2,7 +2,6 @@ package routing
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -47,21 +46,17 @@ func FindLinuxDefaultGW() (string, error) {
 
 	for i, v := range description {
 		if strings.TrimSpace(v) == "Gateway" {
-			fmt.Println("Found gateway at: ", i)
 			gw_at = i
 			break
 		}
 	}
 
-	fmt.Println("Gateway : ", gw_at)
 	gw_val := strings.Split(rows[1], "\t")
 
 	decimal, valErr := strconv.ParseInt(gw_val[gw_at], 16, 64)
 	if valErr != nil {
 		return "", errors.New(valErr.Error())
 	}
-
-	fmt.Println("Gateway value: ", decimal)
 
 	return DecimalToIP(decimal), nil
 }
