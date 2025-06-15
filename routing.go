@@ -53,6 +53,8 @@ func FindLinuxDefaultGW() (string, error) {
 		return "", errors.New(errRead.Error())
 	}
 
+	defer f.Close()
+
 	table := string(b)
 	rows := strings.Split(table, "\n")
 
