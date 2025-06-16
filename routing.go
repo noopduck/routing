@@ -25,6 +25,25 @@ type RoutingTable struct {
 	IRTT        int8
 }
 
+// RouteFlag represents a routing flag and its meaning.
+type RouteFlag struct {
+	Letter string // Symbol, e.g., "U", "G"
+	Bit    int    // Bitmask value
+	Name   string // Full name
+	Desc   string // Description of what the flag means
+}
+
+var routeFlags = []RouteFlag{
+	{"U", 0x1, "Up", "Route is usable (interface is up)"},
+	{"G", 0x2, "Gateway", "Destination is a gateway"},
+	{"H", 0x4, "Host", "Target is a host (not a network)"},
+	{"R", 0x8, "Reinstate", "Route was reinstated for dynamic routing"},
+	{"D", 0x10, "Dynamic", "Route was dynamically created by daemon or redirect"},
+	{"M", 0x20, "Modified", "Route was modified by redirect"},
+	{"A", 0x40, "Addrconf", "Route created by address autoconf"},
+	{"C", 0x80, "Cache", "Route is in cache"},
+}
+
 // Function to return the IP address
 // on it's normal form
 func DecimalToIP(decimal int64) string {
