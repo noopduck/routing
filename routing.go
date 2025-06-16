@@ -38,6 +38,84 @@ func DecimalToIP(decimal int64) string {
 	return ip.String()
 }
 
+// This returns the complete routing table from the LinuxOS
+func GetLinuxRoutingTable() ([]RoutingTable, error) {
+	f, fErr := os.Open("/proc/net/route")
+	if fErr != nil {
+		return nil, errors.New(fErr.Error())
+	}
+
+	b, bErr := io.ReadAll(f)
+	if bErr != nil {
+		return nil, errors.New(bErr.Error())
+	}
+
+	defer f.Close()
+
+	fTable := string(b)
+	fRows := strings.Split(fTable, "\n")
+	description := strings.Split(fRows[0], "\t")
+
+	table := make([]RoutingTable, 0)
+
+	for _, v := range fRows {
+		if strings.Contains(v, "Iface") {
+			continue
+		}
+		fColumn := strings.Split(v, "\t")
+		rtRow := RoutingTable{}
+		for n, v := range fColumn {
+			d := strings.TrimSpace(description[n])
+			switch d {
+			case "Iface":
+				rtRow.Interface = v
+			case "Destination":
+				rtRow.Destination = v
+			case "Gateway":
+				val, valErr := strconv.ParseInt(v, 16, 64)
+				if valErr != nil {
+					return nil, errors.New(valErr.Error())
+				}
+				rtRow.Gateway = DecimalToIP(val)
+			case "Flags":
+				var flag int64
+				flag, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.Flags = int8(flag)
+			case "RefCnt":
+				var refcnt int64
+				refcnt, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.RefCnt = int8(refcnt)
+			case "Use":
+				var use int64
+				use, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.Use = int8(use)
+			case "Metric":
+				var metric int64
+				metric, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.Metric = int8(metric)
+			case "Mask":
+				rtRow.Mask = v
+			case "MTU":
+				var mtu int64
+				mtu, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.MTU = int8(mtu)
+			case "Window":
+				var window int64
+				window, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.Window = int8(window)
+			case "IRTT":
+				var irtt int64
+				irtt, _ = strconv.ParseInt(v, 10, 8)
+				rtRow.IRTT = int8(irtt)
+			}
+		}
+		table = append(table, rtRow)
+	}
+
+	//	var table []RoutingTable = make([]RoutingTable, 0)
+	return table, nil
+}
+
 // In Linux there is the /proc/net/route file, it contains
 // all the routing information defined on the Linux OS,
 // this Function returns the default gateway address by
