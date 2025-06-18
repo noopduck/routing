@@ -15,7 +15,7 @@ type RoutingTable struct {
 	Interface   string
 	Destination string
 	Gateway     string
-	Flags       int8
+	Flags       []RouteFlag
 	RefCnt      int8
 	Use         int8
 	Metric      int8
@@ -28,7 +28,7 @@ type RoutingTable struct {
 // RouteFlag represents a routing flag and its meaning.
 type RouteFlag struct {
 	Letter string // Symbol, e.g., "U", "G"
-	Bit    int    // Bitmask value
+	Bit    int16  // Bitmask value
 	Name   string // Full name
 	Desc   string // Description of what the flag means
 }
@@ -55,6 +55,26 @@ func DecimalToIP(decimal int64) string {
 	)
 
 	return ip.String()
+}
+
+// Assign the respective flags in a more defined way
+func computeRouteFlag(bits int16) []RouteFlag {
+	rf := make([]RouteFlag, 0)
+	var counter int16 = 1
+
+	for i := int16(0); i < bits; i++ {
+		if counter == routeFlags[i].Bit {
+			rf = append(rf, RouteFlag{
+				Letter: routeFlags[i].Letter,
+				Bit:    routeFlags[i].Bit,
+				Name:   routeFlags[i].Name,
+				Desc:   routeFlags[i].Desc,
+			})
+			counter++
+		}
+	}
+
+	return rf
 }
 
 // This returns the complete routing table from the LinuxOS
@@ -98,8 +118,8 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 				rtRow.Gateway = DecimalToIP(val)
 			case "Flags":
 				var flag int64
-				flag, _ = strconv.ParseInt(v, 10, 8)
-				rtRow.Flags = int8(flag)
+				flag, _ = strconv.ParseInt(v, 10, 16)
+				rtRow.Flags = computeRouteFlag(int16(flag))
 			case "RefCnt":
 				var refcnt int64
 				refcnt, _ = strconv.ParseInt(v, 10, 8)
