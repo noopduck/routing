@@ -38,6 +38,25 @@ func main() {
 }
 ```
 
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "github.com/noopduck/routing"
+)
+
+func main() {
+    routes, err := routing.GetLinuxRoutingTable()
+    if err != nil {
+        log.Fatalf("Error retrieving routing table: %v", err)
+    }
+    for _, route := range routes {
+        fmt.Printf("Interface: %s, Destination: %s, Gateway: %s\n", route.Interface, route.Destination, route.Gateway)
+    }
+}
+```
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
