@@ -164,14 +164,10 @@ func flagContains(rf []RouteFlag, letter string) bool {
 	return false
 }
 
-// In Linux there is the /proc/net/route file, it contains
-// all the routing information defined on the Linux OS,
-// this Function returns the default gateway address by
-// reading the file and converting the HEX to DEC and DEC to IP
-func FindLinuxDefaultGW() (string, error) {
+func getDefaultGW() (RoutingTable, error) {
 	rt, err := GetLinuxRoutingTable()
 	if err != nil {
-		return "", errors.New(err.Error())
+		return rt[0], errors.New(err.Error())
 	}
 
 	up := false
@@ -185,9 +181,30 @@ func FindLinuxDefaultGW() (string, error) {
 		}
 
 		if up && gateway {
-			return v.Gateway, nil
+			return v, nil
 		}
 	}
+	return rt[0], errors.New("could not locate default GW")
+}
 
-	return "", errors.New("did not find a default route")
+// In Linux there is the /proc/net/route file, it contains
+// all the routing information defined on the Linux OS,
+// this Function returns the default gateway address by
+// reading the file and converting the HEX to DEC and DEC to IP
+func FindLinuxDefaultGW() (string, error) {
+	tr, err := getDefaultGW()
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	return tr.Gateway, nil
+}
+
+func FindLinuxDefaultGGWInterface() (string, error) {
+	tr, err := getDefaultGW()
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	return tr.Interface, nil
 }
