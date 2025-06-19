@@ -155,54 +155,39 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 	return table, nil
 }
 
+func flagContains(rf []RouteFlag, letter string) bool {
+	for _, v := range rf {
+		if strings.Contains(v.Letter, letter) {
+			return true
+		}
+	}
+	return false
+}
+
 // In Linux there is the /proc/net/route file, it contains
 // all the routing information defined on the Linux OS,
 // this Function returns the default gateway address by
 // reading the file and converting the HEX to DEC and DEC to IP
 func FindLinuxDefaultGW() (string, error) {
-	f, err := os.Open("/proc/net/route")
+	rt, err := GetLinuxRoutingTable()
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	b, errRead := io.ReadAll(f)
-	if errRead != nil {
-		return "", errors.New(errRead.Error())
-	}
+	up := false
+	gateway := false
+	for _, v := range rt {
+		if flagContains(v.Flags, "U") {
+			up = true
+		}
+		if flagContains(v.Flags, "G") {
+			gateway = true
+		}
 
-	defer f.Close()
-
-	table := string(b)
-	rows := strings.Split(table, "\n")
-
-	description := strings.Split(rows[0], "\t")
-
-	var gw_at int
-
-	for i, v := range description {
-		if strings.TrimSpace(v) == "Gateway" {
-			gw_at = i
-			break
+		if up && gateway {
+			return v.Gateway, nil
 		}
 	}
 
-	var decimal int64
-	var valErr error
-
-	for row := range rows {
-		if !strings.Contains(strings.TrimSpace(rows[row]), "Iface") {
-			row_vals := strings.Split(rows[row], "\t")
-			gw_val := strings.TrimSpace(row_vals[gw_at])
-			// If the Gateway is not set, iterate to next row
-			if gw_val != "00000000" {
-				decimal, valErr = strconv.ParseInt(gw_val, 16, 64)
-				if valErr != nil {
-					return "", errors.New(valErr.Error())
-				}
-				break
-			}
-		}
-	}
-
-	return DecimalToIP(decimal), nil
+	return "", errors.New("did not find a default route")
 }
