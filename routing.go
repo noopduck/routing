@@ -151,10 +151,10 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 		table = append(table, rtRow)
 	}
 
-	//	var table []RoutingTable = make([]RoutingTable, 0)
 	return table, nil
 }
 
+// Comparator function for matching the letter code in the RouteFlag's
 func flagContains(rf []RouteFlag, letter string) bool {
 	for _, v := range rf {
 		if strings.Contains(v.Letter, letter) {
@@ -164,6 +164,7 @@ func flagContains(rf []RouteFlag, letter string) bool {
 	return false
 }
 
+// Returns the RoutingTable element that contains the default GW
 func getDefaultGW() (RoutingTable, error) {
 	rt, err := GetLinuxRoutingTable()
 	if err != nil {
@@ -200,7 +201,8 @@ func FindLinuxDefaultGW() (string, error) {
 	return tr.Gateway, nil
 }
 
-func FindLinuxDefaultGGWInterface() (string, error) {
+// Returns the network interface name of the default GW
+func FindLinuxDefaultGWInterface() (string, error) {
 	tr, err := getDefaultGW()
 	if err != nil {
 		return "", errors.New(err.Error())
