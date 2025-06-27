@@ -21,17 +21,18 @@ func TestGetDefaultRouteLinux(t *testing.T) {
 }
 
 func TestGetLinuxRoutingTable(t *testing.T) {
-	result, err := GetLinuxRoutingTable()
+	table := new([]RoutingTable)
+	err := GetLinuxRoutingTable(table)
 	if err != nil {
 		t.Errorf("Calling routing library failed %s %s", "", err.Error())
 	}
 
-	expected, regexpErr := regexp.MatchString("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", result[0].Gateway)
+	expected, regexpErr := regexp.MatchString("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$", (*table)[0].Gateway)
 	if regexpErr != nil {
 		t.Errorf("Calling regexp match inside test failed %t %s", expected, regexpErr.Error())
 	}
 
 	if !expected {
-		t.Errorf("Did not match IP address %s %s", result[0].Gateway, "xxx.xxx.xxx.xxx")
+		t.Errorf("Did not match IP address %s %s", (*table)[0].Gateway, "xxx.xxx.xxx.xxx")
 	}
 }

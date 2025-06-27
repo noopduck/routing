@@ -78,15 +78,15 @@ func computeRouteFlag(bits int16) []RouteFlag {
 }
 
 // This returns the complete routing table from the LinuxOS
-func GetLinuxRoutingTable() ([]RoutingTable, error) {
+func GetLinuxRoutingTable(table *[]RoutingTable) error {
 	f, fErr := os.Open("/proc/net/route")
 	if fErr != nil {
-		return nil, errors.New(fErr.Error())
+		return errors.New(fErr.Error())
 	}
 
 	b, bErr := io.ReadAll(f)
 	if bErr != nil {
-		return nil, errors.New(bErr.Error())
+		return errors.New(bErr.Error())
 	}
 
 	defer f.Close()
@@ -95,7 +95,8 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 	fRows := strings.Split(fTable, "\n")
 	description := strings.Split(fRows[0], "\t")
 
-	table := make([]RoutingTable, 0)
+	// table := make([]RoutingTable, 0)
+	// table := new([]RoutingTable)
 
 	for _, v := range fRows {
 		if strings.Contains(v, "Iface") {
@@ -113,7 +114,7 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 			case "Gateway":
 				val, valErr := strconv.ParseInt(v, 16, 64)
 				if valErr != nil {
-					return nil, errors.New(valErr.Error())
+					return errors.New(valErr.Error())
 				}
 				rtRow.Gateway = DecimalToIP(val)
 			case "Flags":
@@ -148,10 +149,10 @@ func GetLinuxRoutingTable() ([]RoutingTable, error) {
 				rtRow.IRTT = int8(irtt)
 			}
 		}
-		table = append(table, rtRow)
+		*table = append(*table, rtRow)
 	}
 
-	return table, nil
+	return nil
 }
 
 // Comparator function for matching the letter code in the RouteFlag's
@@ -166,14 +167,20 @@ func flagContains(rf []RouteFlag, letter string) bool {
 
 // Returns the RoutingTable element that contains the default GW
 func getDefaultGW() (RoutingTable, error) {
-	rt, err := GetLinuxRoutingTable()
+	rt := new([]RoutingTable)
+
+	err := GetLinuxRoutingTable(rt)
+	// rt, err := GetLinuxRoutingTable()
 	if err != nil {
-		return rt[0], errors.New(err.Error())
+		if len(*rt) > 0 {
+			return (*rt)[0], nil
+		}
+		// return rt[0], errors.New(err.Error())
 	}
 
 	up := false
 	gateway := false
-	for _, v := range rt {
+	for _, v := range *rt {
 		if flagContains(v.Flags, "U") {
 			up = true
 		}
@@ -185,7 +192,7 @@ func getDefaultGW() (RoutingTable, error) {
 			return v, nil
 		}
 	}
-	return rt[0], errors.New("could not locate default GW")
+	return (*rt)[0], errors.New("could not locate default GW")
 }
 
 // In Linux there is the /proc/net/route file, it contains
