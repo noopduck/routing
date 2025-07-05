@@ -15,17 +15,17 @@ import (
 // RoutingTable represents a single entry in the Linux routing table.
 // It contains details about network routes, including the interface, destination, and gateway.
 type RoutingTable struct {
-	Interface   string      // The network interface associated with the route.
-	Destination string      // The destination IP address for the route.
-	Gateway     string      // The gateway IP address for the route.
-	Flags       []RouteFlag // Flags associated with the route.
-	RefCnt      int8        // Reference count for the route.
-	Use         int8        // Usage count of the route.
-	Metric      int8        // Metric for the route, used in route selection.
-	Mask        string      // The subnet mask for the route.
-	MTU         int8        // Maximum transmission unit for the route.
-	Window      int8        // Window size for the route.
-	IRTT        int8        // Initial round trip time for the route.
+	Interface   string               // The network interface associated with the route.
+	Destination string               // The destination IP address for the route.
+	Gateway     string               // The gateway IP address for the route.
+	Flags       map[string]RouteFlag // Flags associated with the route.
+	RefCnt      int8                 // Reference count for the route.
+	Use         int8                 // Usage count of the route.
+	Metric      int8                 // Metric for the route, used in route selection.
+	Mask        string               // The subnet mask for the route.
+	MTU         int8                 // Maximum transmission unit for the route.
+	Window      int8                 // Window size for the route.
+	IRTT        int8                 // Initial round trip time for the route.
 }
 
 // RouteFlag represents a flag used in routing, indicating specific route characteristics.
@@ -62,23 +62,16 @@ func DecimalToIP(decimal int64) string {
 
 // computeRouteFlag takes a bitmask and generates a list of RouteFlags based on it.
 // It takes a bitmask as input and returns the corresponding RouteFlags.
-func computeRouteFlag(bits int16) []RouteFlag {
-	rf := make([]RouteFlag, 0)
-	var counter int16 = 1
+func computeRouteFlag(bits int16) map[string]RouteFlag {
+	rf := make(map[string]RouteFlag)
 
 	for i := range make([]int16, bits) {
-		if counter == routeFlags[i].Bit {
-			rf = append(rf, RouteFlag{
-				Letter: routeFlags[i].Letter,
-				Bit:    routeFlags[i].Bit,
-				Name:   routeFlags[i].Name,
-				Desc:   routeFlags[i].Desc,
-			})
-			counter++
+		if bits&routeFlags[i].Bit != 0 {
+			rf[routeFlags[i].Letter] = routeFlags[i]
 		}
 	}
 
-	return rf // Returns the list of RouteFlags corresponding to the bitmask.
+	return rf
 }
 
 // GetLinuxRoutingTable retrieves the current routing table from the Linux operating system.
@@ -89,12 +82,12 @@ func GetLinuxRoutingTable(table *[]RoutingTable) error {
 		return errors.New(fErr.Error()) // Returns an error if the file cannot be opened.
 	}
 
+	defer f.Close() // Ensures the file is closed when the function exits.
+
 	b, bErr := io.ReadAll(f)
 	if bErr != nil {
 		return errors.New(bErr.Error()) // Returns an error if reading the file fails.
 	}
-
-	defer f.Close() // Ensures the file is closed when the function exits.
 
 	fTable := string(b)
 	fRows := strings.Split(fTable, "\n")         // Splits the file content into rows.
@@ -159,13 +152,9 @@ func GetLinuxRoutingTable(table *[]RoutingTable) error {
 
 // flagContains checks if a slice of RouteFlags contains a specific flag letter.
 // It returns true if the flag is found, otherwise false.
-func flagContains(rf []RouteFlag, letter string) bool {
-	for _, v := range rf {
-		if strings.Contains(v.Letter, letter) {
-			return true // Flag letter found.
-		}
-	}
-	return false // Flag letter not found.
+func flagContains(rf map[string]RouteFlag, letter string) bool {
+	_, ok := rf[letter]
+	return ok
 }
 
 // getDefaultGW returns the RoutingTable entry that contains the default gateway.
