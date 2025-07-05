@@ -1,7 +1,6 @@
 // Package routing provides utilities to read and parse the Linux routing table.
 // It allows retrieving the default gateway and associated network interface by
 // reading data from /proc/net/route and interpreting route flags.
-
 package routing
 
 import (
@@ -182,16 +181,9 @@ func getDefaultGW() (RoutingTable, error) {
 		return RoutingTable{}, errors.New(err.Error()) // Return error if no entries are present.
 	}
 
-	up := false
-	gateway := false
 	for _, v := range *rt {
-		if flagContains(v.Flags, "U") {
-			up = true
-		}
-		if flagContains(v.Flags, "G") {
-			gateway = true
-		}
-
+		up := flagContains(v.Flags, "U")
+		gateway := flagContains(v.Flags, "G")
 		if up && gateway {
 			return v, nil // Return the entry with both "U" and "G" flags.
 		}
